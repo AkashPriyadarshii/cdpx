@@ -15,10 +15,16 @@ pub enum BrowserError {
 impl std::fmt::Display for BrowserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BrowserError::NotFound => write!(f, "Chromium or Chrome executable not found on system"),
+            BrowserError::NotFound => {
+                write!(f, "Chromium or Chrome executable not found on system")
+            }
             BrowserError::SpawnFailed(e) => write!(f, "Failed to spawn browser process: {}", e),
-            BrowserError::PortDiscoveryFailed(e) => write!(f, "Failed to discover remote debugging port: {}", e),
-            BrowserError::ConnectionFailed(e) => write!(f, "Failed to connect to browser CDP endpoint: {}", e),
+            BrowserError::PortDiscoveryFailed(e) => {
+                write!(f, "Failed to discover remote debugging port: {}", e)
+            }
+            BrowserError::ConnectionFailed(e) => {
+                write!(f, "Failed to connect to browser CDP endpoint: {}", e)
+            }
         }
     }
 }
@@ -75,11 +81,13 @@ pub fn find_chrome_binary() -> Result<PathBuf, BrowserError> {
         }
 
         if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-            let chrome_user = PathBuf::from(&local_app_data).join(r"Google\Chrome\Application\chrome.exe");
+            let chrome_user =
+                PathBuf::from(&local_app_data).join(r"Google\Chrome\Application\chrome.exe");
             if chrome_user.exists() {
                 return Ok(chrome_user);
             }
-            let edge_user = PathBuf::from(&local_app_data).join(r"Microsoft\Edge\Application\msedge.exe");
+            let edge_user =
+                PathBuf::from(&local_app_data).join(r"Microsoft\Edge\Application\msedge.exe");
             if edge_user.exists() {
                 return Ok(edge_user);
             }
@@ -103,7 +111,13 @@ pub fn find_chrome_binary() -> Result<PathBuf, BrowserError> {
 
     #[cfg(target_os = "linux")]
     {
-        let names = ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"];
+        let names = [
+            "google-chrome",
+            "google-chrome-stable",
+            "chromium",
+            "chromium-browser",
+            "microsoft-edge",
+        ];
         for name in names {
             if let Ok(path) = which(name) {
                 return Ok(path);
@@ -154,21 +168,21 @@ pub async fn launch_browser(headless: bool) -> Result<BrowserInstance, BrowserEr
         cmd.arg("--headless=new");
     }
 
-    let child = cmd.spawn().map_err(|e| BrowserError::SpawnFailed(e.to_string()))?;
+    let child = cmd
+        .spawn()
+        .map_err(|e| BrowserError::SpawnFailed(e.to_string()))?;
 
     let port_file = user_data_dir.path().join("DevToolsActivePort");
     let mut port: Option<u16> = None;
 
     for _ in 0..60 {
-        if port_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(&port_file) {
-                if let Some(first_line) = content.lines().next() {
-                    if let Ok(p) = first_line.trim().parse::<u16>() {
-                        port = Some(p);
-                        break;
-                    }
-                }
-            }
+        if port_file.exists()
+            && let Ok(content) = std::fs::read_to_string(&port_file)
+            && let Some(first_line) = content.lines().next()
+            && let Ok(p) = first_line.trim().parse::<u16>()
+        {
+            port = Some(p);
+            break;
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
@@ -181,19 +195,21 @@ pub async fn launch_browser(headless: bool) -> Result<BrowserInstance, BrowserEr
     let mut ws_url: Option<String> = None;
 
     for _ in 0..30 {
-        if let Ok(resp) = reqwest::get(&version_url).await {
-            if let Ok(json) = resp.json::<serde_json::Value>().await {
-                if let Some(url_str) = json.get("webSocketDebuggerUrl").and_then(|v| v.as_str()) {
-                    ws_url = Some(url_str.to_string());
-                    break;
-                }
-            }
+        if let Ok(resp) = reqwest::get(&version_url).await
+            && let Ok(json) = resp.json::<serde_json::Value>().await
+            && let Some(url_str) = json.get("webSocketDebuggerUrl").and_then(|v| v.as_str())
+        {
+            ws_url = Some(url_str.to_string());
+            break;
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
 
     let ws_url = ws_url.ok_or_else(|| {
-        BrowserError::ConnectionFailed(format!("Failed to retrieve webSocketDebuggerUrl from {}", version_url))
+        BrowserError::ConnectionFailed(format!(
+            "Failed to retrieve webSocketDebuggerUrl from {}",
+            version_url
+        ))
     })?;
 
     Ok(BrowserInstance {
@@ -211,8 +227,16 @@ mod tests {
     #[test]
     fn test_find_chrome_binary() {
         let binary = find_chrome_binary();
-        assert!(binary.is_ok(), "Should discover Chrome or Edge on host: {:?}", binary.err());
+        assert!(
+            binary.is_ok(),
+            "Should discover Chrome or Edge on host: {:?}",
+            binary.err()
+        );
         let path = binary.unwrap();
-        assert!(path.exists(), "Discovered binary path should exist: {:?}", path);
+        assert!(
+            path.exists(),
+            "Discovered binary path should exist: {:?}",
+            path
+        );
     }
 }

@@ -4,3 +4,6 @@
 .DS_Store
 Thumbs.db
 .env
+*.db
+.sevolve/
+cdpx_profile_*

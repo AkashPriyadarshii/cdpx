@@ -1,8 +1,8 @@
 use crate::action::{click_element, type_element, wait_for_settle};
-use crate::browser::{launch_browser, BrowserInstance};
+use crate::browser::{BrowserInstance, launch_browser};
 use crate::cdp::CdpClient;
 use crate::sasp::SaspSnapshot;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::{self, BufRead, Write};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -97,8 +97,14 @@ pub async fn run_mcp_server() -> Result<(), Box<dyn std::error::Error>> {
 
             "tools/call" => {
                 let params = req.get("params");
-                let tool_name = params.and_then(|p| p.get("name")).and_then(|n| n.as_str()).unwrap_or("");
-                let arguments = params.and_then(|p| p.get("arguments")).cloned().unwrap_or(json!({}));
+                let tool_name = params
+                    .and_then(|p| p.get("name"))
+                    .and_then(|n| n.as_str())
+                    .unwrap_or("");
+                let arguments = params
+                    .and_then(|p| p.get("arguments"))
+                    .cloned()
+                    .unwrap_or(json!({}));
 
                 let res_text = handle_tool_call(Arc::clone(&state), tool_name, arguments).await;
 
@@ -152,7 +158,10 @@ async fn handle_tool_call(state: Arc<Mutex<McpState>>, name: &str, args: Value) 
 
     match name {
         "browser_navigate" => {
-            let url = args.get("url").and_then(|u| u.as_str()).unwrap_or("https://example.com");
+            let url = args
+                .get("url")
+                .and_then(|u| u.as_str())
+                .unwrap_or("https://example.com");
             if let Err(e) = client.navigate(url).await {
                 return format!("Navigation failed: {}", e);
             }

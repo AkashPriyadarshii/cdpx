@@ -1,11 +1,11 @@
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
-use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio::sync::{Mutex, mpsc, oneshot};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -30,11 +30,13 @@ pub struct CdpResponse {
     pub session_id: Option<String>,
 }
 
+pub type PendingRequests = Arc<Mutex<HashMap<u64, oneshot::Sender<Result<Value, String>>>>>;
+
 #[derive(Clone)]
 pub struct CdpClient {
     next_id: Arc<AtomicU64>,
     outgoing_tx: mpsc::Sender<Message>,
-    pending_requests: Arc<Mutex<HashMap<u64, oneshot::Sender<Result<Value, String>>>>>,
+    pending_requests: PendingRequests,
     pub session_id: Option<String>,
 }
 
@@ -47,8 +49,7 @@ impl CdpClient {
 
         let (mut write, mut read) = ws_stream.split();
         let (outgoing_tx, mut outgoing_rx) = mpsc::channel::<Message>(128);
-        let pending_requests: Arc<Mutex<HashMap<u64, oneshot::Sender<Result<Value, String>>>>> =
-            Arc::new(Mutex::new(HashMap::new()));
+        let pending_requests: PendingRequests = Arc::new(Mutex::new(HashMap::new()));
 
         let pending_for_read = Arc::clone(&pending_requests);
 
@@ -67,17 +68,17 @@ impl CdpClient {
             while let Some(msg_result) = read.next().await {
                 match msg_result {
                     Ok(Message::Text(text)) => {
-                        if let Ok(resp) = serde_json::from_str::<CdpResponse>(&text) {
-                            if let Some(id) = resp.id {
-                                let mut pending = pending_for_read.lock().await;
-                                if let Some(sender) = pending.remove(&id) {
-                                    if let Some(res) = resp.result {
-                                        let _ = sender.send(Ok(res));
-                                    } else if let Some(err) = resp.error {
-                                        let _ = sender.send(Err(err.to_string()));
-                                    } else {
-                                        let _ = sender.send(Ok(Value::Null));
-                                    }
+                        if let Ok(resp) = serde_json::from_str::<CdpResponse>(&text)
+                            && let Some(id) = resp.id
+                        {
+                            let mut pending = pending_for_read.lock().await;
+                            if let Some(sender) = pending.remove(&id) {
+                                if let Some(res) = resp.result {
+                                    let _ = sender.send(Ok(res));
+                                } else if let Some(err) = resp.error {
+                                    let _ = sender.send(Err(err.to_string()));
+                                } else {
+                                    let _ = sender.send(Ok(Value::Null));
                                 }
                             }
                         }
@@ -113,11 +114,11 @@ impl CdpClient {
 
         if let Some(target_infos) = targets.get("targetInfos").and_then(|v| v.as_array()) {
             for info in target_infos {
-                if info.get("type").and_then(|t| t.as_str()) == Some("page") {
-                    if let Some(tid) = info.get("targetId").and_then(|i| i.as_str()) {
-                        page_target_id = Some(tid.to_string());
-                        break;
-                    }
+                if info.get("type").and_then(|t| t.as_str()) == Some("page")
+                    && let Some(tid) = info.get("targetId").and_then(|i| i.as_str())
+                {
+                    page_target_id = Some(tid.to_string());
+                    break;
                 }
             }
         }
@@ -187,17 +188,17 @@ impl CdpClient {
     /// Navigates current target to URL and waits for document readiness.
     pub async fn navigate(&self, url: &str) -> Result<(), String> {
         let _ = self.call("Page.enable", None).await;
-        self.call("Page.navigate", Some(json!({ "url": url }))).await?;
+        self.call("Page.navigate", Some(json!({ "url": url })))
+            .await?;
 
         // Await document.readyState transition to interactive or complete
         let start = std::time::Instant::now();
         while start.elapsed() < Duration::from_secs(8) {
-            if let Ok(val) = self.evaluate("document.readyState").await {
-                if let Some(s) = val.as_str() {
-                    if s == "complete" || s == "interactive" {
-                        break;
-                    }
-                }
+            if let Ok(val) = self.evaluate("document.readyState").await
+                && let Some(s) = val.as_str()
+                && (s == "complete" || s == "interactive")
+            {
+                break;
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
@@ -218,10 +219,10 @@ impl CdpClient {
             )
             .await?;
 
-        if let Some(result_obj) = res.get("result") {
-            if let Some(val) = result_obj.get("value") {
-                return Ok(val.clone());
-            }
+        if let Some(result_obj) = res.get("result")
+            && let Some(val) = result_obj.get("value")
+        {
+            return Ok(val.clone());
         }
         Ok(res)
     }

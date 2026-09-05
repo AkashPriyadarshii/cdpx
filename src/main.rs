@@ -78,7 +78,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let target_url = match url {
                 Some(u) => u,
                 None => {
-                    eprintln!("Error: --url <URL> is required for standalone CLI action. For interactive agent sessions, run 'cdpx --mcp'.");
+                    eprintln!(
+                        "Error: --url <URL> is required for standalone CLI action. For interactive agent sessions, run 'cdpx --mcp'."
+                    );
                     std::process::exit(1);
                 }
             };
@@ -102,7 +104,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let target_url = match url {
                 Some(u) => u,
                 None => {
-                    eprintln!("Error: --url <URL> is required for standalone CLI action. For interactive agent sessions, run 'cdpx --mcp'.");
+                    eprintln!(
+                        "Error: --url <URL> is required for standalone CLI action. For interactive agent sessions, run 'cdpx --mcp'."
+                    );
                     std::process::exit(1);
                 }
             };
@@ -123,7 +127,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         None => {
-            println!("cdpx v{} - Driverless CDP Browser Controller & MCP Server", env!("CARGO_PKG_VERSION"));
+            println!(
+                "cdpx v{} - Driverless CDP Browser Controller & MCP Server",
+                env!("CARGO_PKG_VERSION")
+            );
             println!("Run 'cdpx --help' for usage, or 'cdpx --mcp' to launch MCP server.");
         }
     }

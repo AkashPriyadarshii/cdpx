@@ -23,7 +23,10 @@ impl std::error::Error for ActionError {}
 
 /// Parses an element reference string like "@e4" or "4" into a numeric ID.
 pub fn parse_ref_id(ref_str: &str) -> Option<u32> {
-    let clean = ref_str.trim().trim_start_matches('@').trim_start_matches('e');
+    let clean = ref_str
+        .trim()
+        .trim_start_matches('@')
+        .trim_start_matches('e');
     clean.parse::<u32>().ok()
 }
 
@@ -79,8 +82,8 @@ pub async fn wait_for_settle(client: &CdpClient, max_wait_ms: u64) -> Result<(),
 
 /// Two-phase click: in-page scroll & fresh coordinate measurement -> trusted CDP event sequence.
 pub async fn click_element(client: &CdpClient, ref_str: &str) -> Result<(), ActionError> {
-    let id = parse_ref_id(ref_str)
-        .ok_or_else(|| ActionError::ElementNotFound(ref_str.to_string()))?;
+    let id =
+        parse_ref_id(ref_str).ok_or_else(|| ActionError::ElementNotFound(ref_str.to_string()))?;
 
     // Phase 1: In-page scroll into view and re-read live bounding box
     let prep_script = format!(
@@ -158,11 +161,15 @@ pub async fn click_element(client: &CdpClient, ref_str: &str) -> Result<(), Acti
 }
 
 /// Types text into an element reference.
-pub async fn type_element(client: &CdpClient, ref_str: &str, text: &str) -> Result<(), ActionError> {
+pub async fn type_element(
+    client: &CdpClient,
+    ref_str: &str,
+    text: &str,
+) -> Result<(), ActionError> {
     click_element(client, ref_str).await?;
 
-    let id = parse_ref_id(ref_str)
-        .ok_or_else(|| ActionError::ElementNotFound(ref_str.to_string()))?;
+    let id =
+        parse_ref_id(ref_str).ok_or_else(|| ActionError::ElementNotFound(ref_str.to_string()))?;
 
     // Focus and select existing value if present
     let focus_script = format!(

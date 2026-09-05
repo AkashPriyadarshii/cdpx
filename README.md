@@ -54,11 +54,8 @@ cdpx open "https://news.ycombinator.com"
 # 2. Click any reference
 cdpx click @e9
 
-# 3. Fill an entire form atomically in one CDP roundtrip
-cdpx fill --data '{"@e2": "my_user", "@e3": "my_pass"}' --submit @e4
-
-# 4. Dump clean, token-budgeted Markdown
-cdpx dump --format markdown
+# 3. Run as an MCP server for Claude Code, Antigravity, or Codex
+cdpx --mcp
 ```
 
 ## Model Context Protocol (MCP) Setup
@@ -79,9 +76,8 @@ cdpx dump --format markdown
 
 ### Tools Exposed to Agents
 * `browser_navigate(url)` - Navigates, settles hydration, returns compressed SASP map.
-* `browser_act(ref, action, value?)` - Performs `click`, `type`, `press`, `hover` on target `@eN`.
-* `browser_fill_form(fields, submit_ref?)` - Atomic multi-field execution in a single browser tick.
-* `browser_extract(format?)` - Returns token-compressed Markdown or structured data.
+* `browser_act(ref, action, value?)` - Performs `click` / `type` on target `@eN`.
+* `browser_snapshot()` - Returns the token-compressed SASP element map of the current page.
 
 ## Development
 

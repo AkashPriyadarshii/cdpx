@@ -421,7 +421,7 @@
             border: 1px solid var(--hairline-strong);
             border-radius: var(--r-tag);
             color: var(--ink-strong);
-            transition: all 120ms ease;
+            transition: color 120ms var(--ease-enter), border-color 120ms var(--ease-enter), background-color 120ms var(--ease-enter);
         }
         .preset-btn:hover {
             border-color: var(--primary);
@@ -742,7 +742,7 @@
             border: 1px solid var(--hairline-strong);
             border-radius: var(--r-inner);
             padding: 18px;
-            transition: all 150ms ease;
+            transition: transform 150ms var(--ease-enter), border-color 150ms var(--ease-enter);
         }
         .eco-card:hover {
             border-color: var(--primary);
@@ -831,13 +831,48 @@
             color: var(--muted);
         }
 
-        /* === RESPONSIVE === */
-        @media (max-width: 900px) {
-            .hero-grid, .arch-layout, .autopsy-grid, .creator-grid, .footer-grid, .stepper-grid, .calc-sliders {
-                grid-template-columns: 1fr;
-            }
-            .stat-banner {
-                grid-template-columns: repeat(2, 1fr);
+        /* === RESPONSIVE & AUTO-LAYOUT ENGINE === */
+        @media (max-width: 1024px) {
+            .hero-headline { font-size: 38px; }
+            .section-title { font-size: 28px; }
+            .arch-layout { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 860px) {
+            .nav-links { display: none; }
+            .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+            .hero-headline { font-size: 32px; }
+            .hero-actions { flex-direction: column; align-items: stretch; }
+            .hero-actions a { justify-content: center; text-align: center; }
+            .calc-sliders { grid-template-columns: 1fr; }
+            .calc-output-strip { grid-template-columns: 1fr; }
+            .stepper-grid { grid-template-columns: 1fr; }
+            .autopsy-grid { grid-template-columns: 1fr; }
+            .creator-grid { grid-template-columns: 1fr; gap: 24px; }
+            .ecosystem-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+            .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+            .stat-banner { grid-template-columns: repeat(2, 1fr); }
+            .terminal-presets { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 8px; }
+            .terminal-presets button { flex-shrink: 0; }
+        }
+
+        @media (max-width: 480px) {
+            .stat-banner { grid-template-columns: 1fr; }
+            .stat-val { font-size: 24px; }
+            .hero-headline { font-size: 26px; }
+            .container { padding: 0 16px; }
+            .spec-table th, .spec-table td, .b-table th, .b-table td { padding: 8px 10px; font-size: 11px; }
+            .code-preview { font-size: 10px; height: 220px; }
+        }
+
+        /* Reduced Motion Fallback */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
             }
         }
     </style>
@@ -981,15 +1016,15 @@
                     </div>
 
                     <div class="calc-output-strip">
-                        <div class="calc-card-metric">
+                        <div class="calc-card-metric font-mono">
                             <div class="c-lbl">Playwright Monthly Token Bill</div>
                             <div class="c-amt" id="calc-bill-playwright" style="color:var(--danger);">$12,825</div>
                         </div>
-                        <div class="calc-card-metric">
+                        <div class="calc-card-metric font-mono">
                             <div class="c-lbl">cdpx SASP Monthly Token Bill</div>
                             <div class="c-amt" id="calc-bill-cdpx" style="color:var(--success);">$74</div>
                         </div>
-                        <div class="calc-card-metric c-highlight">
+                        <div class="calc-card-metric c-highlight font-mono">
                             <div class="c-lbl">Net Annual Dollars Saved</div>
                             <div class="c-amt" id="calc-bill-savings">$153,012 / yr</div>
                         </div>
@@ -1083,7 +1118,7 @@
                         </svg>
                     </div>
 
-                    <div style="background:var(--surface-card); border:1px solid var(--hairline-strong); border-radius:var(--r-outer); overflow:hidden;">
+                    <div style="background:var(--surface-card); border:1px solid var(--hairline-strong); border-radius:var(--r-outer); overflow-x:auto; -webkit-overflow-scrolling:touch;">
                         <table class="spec-table">
                             <thead>
                                 <tr>
@@ -1201,7 +1236,7 @@
                     </p>
                 </div>
 
-                <div style="background:var(--surface-card); border:1px solid var(--hairline-strong); border-radius:var(--r-outer); overflow:hidden;">
+                <div style="background:var(--surface-card); border:1px solid var(--hairline-strong); border-radius:var(--r-outer); overflow-x:auto; -webkit-overflow-scrolling:touch;">
                     <table class="b-table">
                         <thead>
                             <tr>

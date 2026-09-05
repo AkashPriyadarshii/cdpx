@@ -58,10 +58,9 @@ Lightweight stdio JSON-RPC 2.0 server exposing `browser_navigate`, `browser_act`
 2. Run `cdpx click @e1` and verify navigation side-effect occurs.
 3. Verify MCP stdio handshake via JSON-RPC test script.
 
-* [x] **Milestone 5: SEO, Marketing Artifacts, CI & Documentation Suite**
+* [x] **Milestone 5: SEO, Marketing Artifacts & Documentation Suite**
   * **Repository Metadata**: Curated GitHub topics (`cdp`, `browser-automation`, `mcp-server`, `rust`, `playwright-alternative`, `ai-agent`, `token-compression`, `stealth-browser`), one-line tagline, and social preview badges.
   * **README & Documentation**: Rich search-intent sections, LLM benchmark comparisons, copy-paste install commands, and full [`USAGE.md`](file:///C:/Users/saves/Desktop/cdpx/USAGE.md).
   * **Marketing Landing Page (`site/index.html`)**: Bespoke editorial brutalist landing page with live interactive token-comparison widget, zero external runtime dependencies, full metadata OpenGraph tags, and official ecosystem footer.
-  * **Continuous Integration (`.github/workflows/ci.yml`)**: Cross-platform CI testing (Ubuntu, Windows) verifying compilation, unit tests, code formatting (`cargo fmt`), and strict linter warnings (`cargo clippy`).
-  * **Full Verification Scorecard**: 20 top global sites and multi-subpage tests on `akashpriyadarshi.vercel.app` verified with 100% clean process exits.
+  * **Verification & Audit Gates**: Local pre-push verification verifying compilation, unit tests, code formatting (`cargo fmt`), strict linter warnings (`cargo clippy`), and 20 top global sites + `akashpriyadarshi.vercel.app` multi-subpage verification.
 

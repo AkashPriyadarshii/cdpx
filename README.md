@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/AkashPriyadarshii/cdpx?style=flat-square)](LICENSE)
 
 `cdpx` is a driverless Chrome DevTools Protocol (CDP) browser controller and stdio MCP server compiled into a single static Rust binary. It connects directly to Chromium via WebSockets, compresses dynamic web state by 90%+ into interactive element handles (`@e1`, `@e2`), and executes trusted two-phase actions with zero Node.js or Python runtime dependencies.
-
+.
 ```bash
 # Launch and get a clean, token-compressed element map (<800 tokens)
 cdpx open "https://github.com/login"

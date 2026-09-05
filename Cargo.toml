@@ -9,6 +9,11 @@ repository = "https://github.com/AkashPriyadarshii/cdpx"
 readme = "README.md"
 keywords = ["cdp", "browser-automation", "mcp", "ai-agent", "playwright-alternative"]
 categories = ["command-line-utilities", "development-tools"]
+exclude = [
+  ".github", ".gitignore", "AGENTS.md", "ARCHITECTURE.md", "BENCHMARK.md",
+  "CLAUDE.md", "CONTRIBUTING.md", "Cargo.lock", "GEMINI.md", "IMPLEMENTATION_PLAN.md",
+  "SECURITY.md", "SPEC.md", "USAGE.md", "site"
+]
 
 [dependencies]
 tokio = { version = "1.43", features = ["full"] }

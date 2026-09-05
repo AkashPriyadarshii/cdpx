@@ -25,6 +25,7 @@ impl std::fmt::Display for BrowserError {
 
 impl std::error::Error for BrowserError {}
 
+#[allow(dead_code)]
 pub struct BrowserInstance {
     pub child: Child,
     pub user_data_dir: TempDir,
@@ -34,6 +35,15 @@ pub struct BrowserInstance {
 
 impl Drop for BrowserInstance {
     fn drop(&mut self) {
+        #[cfg(target_os = "windows")]
+        {
+            let pid = self.child.id();
+            let _ = Command::new("taskkill")
+                .args(["/F", "/T", "/PID", &pid.to_string()])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
+        }
         let _ = self.child.kill();
         let _ = self.child.wait();
     }
@@ -120,6 +130,9 @@ pub async fn launch_browser(headless: bool) -> Result<BrowserInstance, BrowserEr
 
     let mut cmd = Command::new(&chrome_path);
     cmd.arg("--remote-debugging-port=0")
+        .arg("--remote-debugging-address=127.0.0.1")
+        .arg("--remote-allow-origins=*")
+        .arg("--window-size=1280,800")
         .arg(format!("--user-data-dir={}", user_data_dir.path().display()))
         .arg("--disable-blink-features=AutomationControlled")
         .arg("--exclude-switches=enable-automation")
@@ -131,6 +144,7 @@ pub async fn launch_browser(headless: bool) -> Result<BrowserInstance, BrowserEr
         .arg("--no-default-browser-check")
         .arg("--hide-scrollbars")
         .arg("--disable-features=Translate,OptimizationHints,MediaRouter")
+        .arg("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")
         .arg("about:blank")
         .stdin(Stdio::null())
         .stdout(Stdio::null())

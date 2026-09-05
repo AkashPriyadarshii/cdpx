@@ -37,7 +37,7 @@ enum Commands {
     Click {
         /// Element handle (@e1, @e2)
         target: String,
-        /// Optional URL to open first
+        /// Target URL to open first
         #[arg(short, long)]
         url: Option<String>,
     },
@@ -47,7 +47,7 @@ enum Commands {
         target: String,
         /// Text string to type
         text: String,
-        /// Optional URL to open first
+        /// Target URL to open first
         #[arg(short, long)]
         url: Option<String>,
     },
@@ -68,48 +68,63 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let client = cdp::CdpClient::connect(&browser.ws_url).await?;
 
             client.navigate(&url).await?;
-            action::wait_for_settle(&client, 1200).await?;
+            action::wait_for_settle(&client, 1500).await?;
 
             let snapshot = mcp::extract_snapshot(&client).await;
             println!("{}", snapshot);
         }
 
         Some(Commands::Click { target, url }) => {
+            let target_url = match url {
+                Some(u) => u,
+                None => {
+                    eprintln!("Error: --url <URL> is required for standalone CLI action. For interactive agent sessions, run 'cdpx --mcp'.");
+                    std::process::exit(1);
+                }
+            };
+
             let browser = browser::launch_browser(!cli.headed).await?;
             let client = cdp::CdpClient::connect(&browser.ws_url).await?;
 
-            if let Some(u) = url {
-                client.navigate(&u).await?;
-                action::wait_for_settle(&client, 1200).await?;
-                // Pre-populate cache
-                let _ = mcp::extract_snapshot(&client).await;
-            }
+            client.navigate(&target_url).await?;
+            action::wait_for_settle(&client, 1500).await?;
+            let _ = mcp::extract_snapshot(&client).await;
 
-            println!("Clicking {}...", target);
+            println!("Clicking {} on {}...", target, target_url);
             action::click_element(&client, &target).await?;
+            action::wait_for_settle(&client, 800).await?;
+
             let snapshot = mcp::extract_snapshot(&client).await;
             println!("{}", snapshot);
         }
 
         Some(Commands::Type { target, text, url }) => {
+            let target_url = match url {
+                Some(u) => u,
+                None => {
+                    eprintln!("Error: --url <URL> is required for standalone CLI action. For interactive agent sessions, run 'cdpx --mcp'.");
+                    std::process::exit(1);
+                }
+            };
+
             let browser = browser::launch_browser(!cli.headed).await?;
             let client = cdp::CdpClient::connect(&browser.ws_url).await?;
 
-            if let Some(u) = url {
-                client.navigate(&u).await?;
-                action::wait_for_settle(&client, 1200).await?;
-                let _ = mcp::extract_snapshot(&client).await;
-            }
+            client.navigate(&target_url).await?;
+            action::wait_for_settle(&client, 1500).await?;
+            let _ = mcp::extract_snapshot(&client).await;
 
-            println!("Typing into {}...", target);
+            println!("Typing into {} on {}...", target, target_url);
             action::type_element(&client, &target, &text).await?;
+            action::wait_for_settle(&client, 800).await?;
+
             let snapshot = mcp::extract_snapshot(&client).await;
             println!("{}", snapshot);
         }
 
         None => {
-            println!("cdpx v{} - Driverless CDP browser controller & stdio MCP server.", env!("CARGO_PKG_VERSION"));
-            println!("Run 'cdpx --help' for subcommands or 'cdpx --mcp' to start the AI agent server.");
+            println!("cdpx v{} - Driverless CDP Browser Controller & MCP Server", env!("CARGO_PKG_VERSION"));
+            println!("Run 'cdpx --help' for usage, or 'cdpx --mcp' to launch MCP server.");
         }
     }
 

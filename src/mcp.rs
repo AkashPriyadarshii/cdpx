@@ -156,7 +156,7 @@ async fn handle_tool_call(state: Arc<Mutex<McpState>>, name: &str, args: Value) 
             if let Err(e) = client.navigate(url).await {
                 return format!("Navigation failed: {}", e);
             }
-            let _ = wait_for_settle(client, 1000).await;
+            let _ = wait_for_settle(client, 1500).await;
             extract_snapshot(client).await
         }
 
@@ -179,6 +179,7 @@ async fn handle_tool_call(state: Arc<Mutex<McpState>>, name: &str, args: Value) 
                 _ => return format!("Unsupported action: {}", action),
             }
 
+            let _ = wait_for_settle(client, 800).await;
             extract_snapshot(client).await
         }
 

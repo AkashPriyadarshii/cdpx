@@ -27,19 +27,36 @@ pub fn parse_ref_id(ref_str: &str) -> Option<u32> {
     clean.parse::<u32>().ok()
 }
 
-/// Settles dynamic DOM mutations before an action is executed.
+/// Settles dynamic DOM mutations before an action or snapshot is executed.
 pub async fn wait_for_settle(client: &CdpClient, max_wait_ms: u64) -> Result<(), ActionError> {
+    // 1. Ensure document has loaded
+    let _ = client
+        .evaluate(
+            r#"
+        new Promise((resolve) => {
+            if (document.readyState === 'complete') return resolve(true);
+            window.addEventListener('load', () => resolve(true), { once: true });
+            setTimeout(() => resolve(true), 2000);
+        })
+    "#,
+        )
+        .await;
+
+    // 2. Wait for dynamic SPA hydration and mutation settlement
     let check_script = r#"
         new Promise((resolve) => {
             let timeout;
+            const root = document.body || document.documentElement;
+            if (!root) return resolve(true);
+
             const observer = new MutationObserver(() => {
                 clearTimeout(timeout);
                 timeout = setTimeout(() => {
                     observer.disconnect();
                     resolve(true);
-                }, 150);
+                }, 200);
             });
-            observer.observe(document.body || document.documentElement, {
+            observer.observe(root, {
                 childList: true,
                 subtree: true,
                 attributes: true
@@ -47,12 +64,12 @@ pub async fn wait_for_settle(client: &CdpClient, max_wait_ms: u64) -> Result<(),
             timeout = setTimeout(() => {
                 observer.disconnect();
                 resolve(true);
-            }, 150);
+            }, 250);
         })
     "#;
 
     let _ = tokio::time::timeout(
-        Duration::from_millis(max_wait_ms),
+        Duration::from_millis(max_wait_ms.max(2000)),
         client.evaluate(check_script),
     )
     .await;
@@ -68,8 +85,8 @@ pub async fn click_element(client: &CdpClient, ref_str: &str) -> Result<(), Acti
     // Phase 1: In-page scroll into view and re-read live bounding box
     let prep_script = format!(
         r#"(() => {{
-            if (!window.__CDPX_CACHE || !window.__CDPX_CACHE.has({id})) return null;
-            const el = window.__CDPX_CACHE.get({id});
+            if (!window.__CDPX_REGISTRY__ || !window.__CDPX_REGISTRY__.has({id})) return null;
+            const el = window.__CDPX_REGISTRY__.get({id});
             el.scrollIntoView({{ block: 'center', inline: 'center', behavior: 'instant' }});
             const rect = el.getBoundingClientRect();
             return {{
@@ -106,23 +123,22 @@ pub async fn click_element(client: &CdpClient, ref_str: &str) -> Result<(), Acti
         .await
         .map_err(ActionError::DispatchFailed)?;
 
-    tokio::time::sleep(Duration::from_millis(15)).await;
-
     client
         .call(
             "Input.dispatchMouseEvent",
             Some(json!({
                 "type": "mousePressed",
                 "button": "left",
-                "clickCount": 1,
+                "buttons": 1,
                 "x": cx,
-                "y": cy
+                "y": cy,
+                "clickCount": 1
             })),
         )
         .await
         .map_err(ActionError::DispatchFailed)?;
 
-    tokio::time::sleep(Duration::from_millis(30)).await;
+    tokio::time::sleep(Duration::from_millis(50)).await;
 
     client
         .call(
@@ -130,62 +146,60 @@ pub async fn click_element(client: &CdpClient, ref_str: &str) -> Result<(), Acti
             Some(json!({
                 "type": "mouseReleased",
                 "button": "left",
-                "clickCount": 1,
                 "x": cx,
-                "y": cy
+                "y": cy,
+                "clickCount": 1
             })),
         )
         .await
         .map_err(ActionError::DispatchFailed)?;
 
-    // Phase 3: Wait for post-action settlement
-    let _ = wait_for_settle(client, 400).await;
-
     Ok(())
 }
 
-/// Types text into an element reference by focusing and emitting raw CDP key events.
+/// Types text into an element reference.
 pub async fn type_element(client: &CdpClient, ref_str: &str, text: &str) -> Result<(), ActionError> {
+    click_element(client, ref_str).await?;
+
     let id = parse_ref_id(ref_str)
         .ok_or_else(|| ActionError::ElementNotFound(ref_str.to_string()))?;
 
-    // Focus element
+    // Focus and select existing value if present
     let focus_script = format!(
         r#"(() => {{
-            if (!window.__CDPX_CACHE || !window.__CDPX_CACHE.has({id})) return false;
-            const el = window.__CDPX_CACHE.get({id});
+            if (!window.__CDPX_REGISTRY__ || !window.__CDPX_REGISTRY__.has({id})) return false;
+            const el = window.__CDPX_REGISTRY__.get({id});
             el.focus();
-            if (el.value !== undefined) el.value = '';
+            if (el.select) el.select();
             return true;
         }})()"#
     );
 
-    let focused = client
-        .evaluate(&focus_script)
-        .await
-        .map_err(ActionError::EvaluationFailed)?;
+    let _ = client.evaluate(&focus_script).await;
 
-    if !focused.as_bool().unwrap_or(false) {
-        return Err(ActionError::ElementNotFound(ref_str.to_string()));
+    // Send keystrokes via CDP Input
+    for ch in text.chars() {
+        client
+            .call(
+                "Input.dispatchKeyEvent",
+                Some(json!({
+                    "type": "keyDown",
+                    "text": ch.to_string()
+                })),
+            )
+            .await
+            .map_err(ActionError::DispatchFailed)?;
+
+        client
+            .call(
+                "Input.dispatchKeyEvent",
+                Some(json!({
+                    "type": "keyUp"
+                })),
+            )
+            .await
+            .map_err(ActionError::DispatchFailed)?;
     }
-
-    // Insert text directly via Input.insertText for speed and zero IME drift
-    client
-        .call("Input.insertText", Some(json!({ "text": text })))
-        .await
-        .map_err(ActionError::DispatchFailed)?;
-
-    // Trigger synthetic input and change events in page
-    let trigger_script = format!(
-        r#"(() => {{
-            const el = window.__CDPX_CACHE.get({id});
-            if (el) {{
-                el.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                el.dispatchEvent(new Event('change', {{ bubbles: true }}));
-            }}
-        }})()"#
-    );
-    let _ = client.evaluate(&trigger_script).await;
 
     Ok(())
 }
@@ -197,9 +211,9 @@ mod tests {
     #[test]
     fn test_parse_ref_id() {
         assert_eq!(parse_ref_id("@e1"), Some(1));
-        assert_eq!(parse_ref_id("@e42"), Some(42));
-        assert_eq!(parse_ref_id("e9"), Some(9));
-        assert_eq!(parse_ref_id("7"), Some(7));
+        assert_eq!(parse_ref_id("e42"), Some(42));
+        assert_eq!(parse_ref_id("100"), Some(100));
+        assert_eq!(parse_ref_id("@e0"), Some(0));
         assert_eq!(parse_ref_id("invalid"), None);
     }
 }

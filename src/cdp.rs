@@ -4,6 +4,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
@@ -85,6 +86,12 @@ impl CdpClient {
                     Err(_) => break,
                     _ => {}
                 }
+            }
+
+            // Drain any pending requests to prevent hanging callers on connection drop
+            let mut pending = pending_for_read.lock().await;
+            for (_, tx) in pending.drain() {
+                let _ = tx.send(Err("CDP connection closed".to_string()));
             }
         });
 
@@ -177,10 +184,24 @@ impl CdpClient {
             .map_err(|_| "CDP response channel dropped prematurely".to_string())?
     }
 
-    /// Navigates current target to URL and waits for basic load.
+    /// Navigates current target to URL and waits for document readiness.
     pub async fn navigate(&self, url: &str) -> Result<(), String> {
         let _ = self.call("Page.enable", None).await;
         self.call("Page.navigate", Some(json!({ "url": url }))).await?;
+
+        // Await document.readyState transition to interactive or complete
+        let start = std::time::Instant::now();
+        while start.elapsed() < Duration::from_secs(8) {
+            if let Ok(val) = self.evaluate("document.readyState").await {
+                if let Some(s) = val.as_str() {
+                    if s == "complete" || s == "interactive" {
+                        break;
+                    }
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+
         Ok(())
     }
 

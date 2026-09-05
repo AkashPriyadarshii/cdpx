@@ -7,7 +7,7 @@ description = "Driverless, token-compressed Chrome DevTools Protocol browser con
 license = "MIT"
 repository = "https://github.com/AkashPriyadarshii/cdpx"
 readme = "README.md"
-keywords = ["cdp", "browser-automation", "mcp", "ai-agent", "playwright-alternative"]
+keywords = ["cdp", "browser-automation", "mcp", "ai-agent", "playwright"]
 categories = ["command-line-utilities", "development-tools"]
 exclude = [
   ".github", ".gitignore", "AGENTS.md", "ARCHITECTURE.md", "BENCHMARK.md",

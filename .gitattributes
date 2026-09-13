@@ -1,0 +1,8 @@
+﻿# GitHub Linguist language overrides
+# Keep GitHub repository language statistics 100% Rust
+
+site/** linguist-documentation
+site/* linguist-documentation
+*.html linguist-documentation
+*.css linguist-documentation
+*.js linguist-documentation

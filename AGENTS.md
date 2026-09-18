@@ -27,7 +27,15 @@ Budget: Rs 0 infrastructure, zero external Node.js/Python driver processes.
 | `src/sasp.rs` | SASP serialization and monotonic `@e1..@eN` handle management. |
 | `src/action.rs` | Two-phase click/type engine with DOM mutation quiet period settlement. |
 | `src/mcp.rs` | Lightweight stdio JSON-RPC 2.0 MCP server loop. |
+| `src/jev.rs` | TypeSafe Jev integration - Choice, Noul, Score via `api.typesafe.ai`. |
 | `Cargo.toml` | Release binary tuning (`opt-level = "z"`, `lto = true`, `panic = "abort"`). |
+
+## TypeSafe Jev Integration
+- Uses `reqwest` (existing dep) to call `POST https://api.typesafe.ai/v1/systemone`
+- Auth via `TYPESAFE_API_KEY` env var, model via `TYPESAFE_MODEL` (default `jev-latest`)
+- Three primitives: `jev::choice()`, `jev::noul()`, `jev::score()` — all async
+- Jev safety gate blocks unsafe actions in `browser_act`
+- `browser_goal` and `browser_suggest` MCP tools use Jev for decision-making
 
 ## Build & Test Verification Commands
 ```bash

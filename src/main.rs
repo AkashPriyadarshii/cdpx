@@ -1,6 +1,7 @@
 mod action;
 mod browser;
 mod cdp;
+mod jev;
 mod mcp;
 mod sasp;
 
@@ -47,6 +48,22 @@ enum Commands {
         target: String,
         /// Text string to type
         text: String,
+        /// Target URL to open first
+        #[arg(short, long)]
+        url: Option<String>,
+    },
+    /// Set a goal and let Jev select the best element and action
+    Goal {
+        /// Natural language goal
+        goal: String,
+        /// Target URL to open first
+        #[arg(short, long)]
+        url: Option<String>,
+    },
+    /// Rank elements by relevance to a goal using Jev
+    Suggest {
+        /// Natural language goal to rank elements against
+        goal: String,
         /// Target URL to open first
         #[arg(short, long)]
         url: Option<String>,
@@ -124,6 +141,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let snapshot = mcp::extract_snapshot(&client).await;
             println!("{}", snapshot);
+        }
+
+        Some(Commands::Suggest { goal, url }) => {
+            let target_url = url.unwrap_or_else(|| "https://example.com".to_string());
+            let browser = browser::launch_browser(!cli.headed).await?;
+            let client = cdp::CdpClient::connect(&browser.ws_url).await?;
+            client.navigate(&target_url).await?;
+            action::wait_for_settle(&client, 1500).await?;
+            let result = mcp::handle_suggest(&client, &goal).await;
+            println!("{}", result);
+        }
+
+        Some(Commands::Goal { goal, url }) => {
+            let target_url = url.unwrap_or_else(|| "https://example.com".to_string());
+            let browser = browser::launch_browser(!cli.headed).await?;
+            let client = cdp::CdpClient::connect(&browser.ws_url).await?;
+            client.navigate(&target_url).await?;
+            action::wait_for_settle(&client, 1500).await?;
+            let result = mcp::handle_goal(&client, &goal).await;
+            println!("{}", result);
         }
 
         None => {

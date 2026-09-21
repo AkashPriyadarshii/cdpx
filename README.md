@@ -1,5 +1,7 @@
 # cdpx - Driverless, Token-Compressed Browser Engine for AI Agents
 
+[![crates.io](https://img.shields.io/crates/v/cdpx?style=flat-square)](https://crates.io/crates/cdpx) [![downloads](https://img.shields.io/crates/d/cdpx?style=flat-square)](https://crates.io/crates/cdpx) [![release](https://img.shields.io/github/v/release/AkashPriyadarshii/cdpx?style=flat-square&label=release)](https://github.com/AkashPriyadarshii/cdpx/releases)
+
 [![Crates.io](https://img.shields.io/crates/v/cdpx?style=flat-square&color=orange)](https://crates.io/crates/cdpx)
 [![License](https://img.shields.io/github/license/AkashPriyadarshii/cdpx?style=flat-square)](LICENSE)
 

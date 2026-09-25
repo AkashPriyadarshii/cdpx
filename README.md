@@ -1,3 +1,5 @@
+*Fuel the next build:* [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
+
 # cdpx - Driverless, Token-Compressed Browser Engine for AI Agents
 
 [![crates.io](https://img.shields.io/crates/v/cdpx?style=flat-square)](https://crates.io/crates/cdpx) [![downloads](https://img.shields.io/crates/d/cdpx?style=flat-square)](https://crates.io/crates/cdpx) [![release](https://img.shields.io/github/v/release/AkashPriyadarshii/cdpx?style=flat-square&label=release)](https://github.com/AkashPriyadarshii/cdpx/releases)
